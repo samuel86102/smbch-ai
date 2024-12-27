@@ -9,12 +9,12 @@ with open('sys_prompt.txt', 'r', encoding='utf-8') as file:
     sys_prompt = file.read()
 
 
-st.set_page_config(page_title="石浸AI助手", page_icon="✝️")
+st.set_page_config(page_title="教會AI助手", page_icon="✝️")
 
 
 # Show title and description.
-st.title("✝️  石浸AI助手 🤖 ")
-st.write("測試階段，可以問教會資訊 / 下一季服事表，但不要狂問額度會用完")
+st.title("✝️  教會AI助手 ")
+st.write("測試階段，可以問教會資訊(資訊截至12/15)，但不要狂問額度會用完")
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
@@ -44,7 +44,7 @@ for message in st.session_state.messages:
 # automatically at the bottom of the page.
 if prompt := st.chat_input("What is up?"):
 
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": f"reply in zh-tw {prompt}"})
     st.chat_message("user").write(prompt)
     response = client.chat.completions.create(model="llama3-8b-8192", messages=st.session_state.messages)
     msg = response.choices[0].message.content
