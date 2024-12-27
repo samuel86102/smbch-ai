@@ -46,7 +46,8 @@ if prompt := st.chat_input("What is up?"):
 
     st.session_state.messages.append({"role": "user", "content": f"reply in zh-tw {prompt}"})
     st.chat_message("user").write(prompt)
-    response = client.chat.completions.create(model="llama3-8b-8192", messages=st.session_state.messages)
+    #response = client.chat.completions.create(model="llama3-8b-8192", messages=st.session_state.messages)
+    response = client.chat.completions.create(model="llama-3.1-8b-instant", messages=st.session_state.messages)
     msg = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": msg})
     st.chat_message("assistant").write(msg)
