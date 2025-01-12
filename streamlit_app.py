@@ -57,7 +57,7 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
     st.chat_message("user").write(prompt)
     # response = client.chat.completions.create(model="llama3-8b-8192", messages=st.session_state.messages)
     response = client.chat.completions.create(
-        model=model_name, messages=st.session_state.messages
+        model=model_name, messages=st.session_state.messages, stream=False
     )
     msg = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": msg})
