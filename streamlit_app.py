@@ -17,8 +17,12 @@ st.set_page_config(page_title="教會AI助手", page_icon="✝️")
 
 # Show title and description.
 st.title("✝️  教會AI助手 ")
-st.write("測試階段，可以問教會資訊(資訊截至 2025/01/05 )")
-st.write("可以產生小組成長題目")
+st.write("""
+### ⚠️ 測試階段 ⚠️
+- 可以問教會資訊(資訊截至 2025/01/12)
+- 可以產生小組成長題目
+- 可以詢問如何讀聖經
+""")
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
