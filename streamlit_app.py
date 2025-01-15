@@ -9,8 +9,13 @@ st.set_page_config(page_title="教會AI助手", page_icon="✝️")
 
 # Show title and description.
 st.title("✝️  教會AI助手 ")
+st.warning("測試階段", icon="⚠️")
+
+if st.button("慶祝！🥳"):
+    st.balloons()
+
+
 st.write("""
-### ⚠️ 測試階段 ⚠️
 - 可以問教會資訊(資訊截至 2025/01/12)
 - 可以產生小組成長題目
 - 可以詢問如何讀聖經
@@ -57,4 +62,3 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
             msg += chunk_content
             message_placeholder.markdown(msg)  # Update content incrementally
     st.session_state.messages.append({"role": "assistant", "content": msg})
-
