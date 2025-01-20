@@ -1,54 +1,11 @@
 import streamlit as st
 from openai import OpenAI
-import pandas as pd
-import re
-
-
-def convert_google_sheet_url(url):
-    # Regular expression to match and capture the necessary part of the URL
-    pattern = r"https://docs\.google\.com/spreadsheets/d/([a-zA-Z0-9-_]+)(/edit#gid=(\d+)|/edit.*)?"
-
-    # Replace function to construct the new URL for CSV export
-    # If gid is present in the URL, it includes it in the export URL, otherwise, it's omitted
-    replacement = (
-        lambda m: f"https://docs.google.com/spreadsheets/d/{m.group(1)}/export?"
-        + (f"gid={m.group(3)}&" if m.group(3) else "")
-        + "format=csv"
-    )
-
-    # Replace using regex
-    new_url = re.sub(pattern, replacement, url)
-
-    return new_url
-
-
-def df_to_json(csv_url):
-    # Read the CSV from the URL into a DataFrame
-    df = pd.read_csv(csv_url, header=1)
-    df = df[df["季度"].isin(["Q1", "Q2", "Q3"])]
-
-    # Convert the DataFrame to a JSON string
-    # json_output = df.to_json(orient="records", indent=4, force_ascii=False)
-    json_output = df.to_json(orient="records", force_ascii=False)  # compact
-
-    return json_output
-
-
-st.set_page_config(page_title="教會AI助手", page_icon="✝️")
-
 
 # Read the system prompt from the external file
 with open("sys_prompt.txt", "r", encoding="utf-8") as file:
     sys_prompt = file.read()
 
-
-url = "https://docs.google.com/spreadsheets/d/1jBIFbMoAGu28sz2EXOkuGVQtgT8yY7l8GNJ3ZmctIYM/edit?gid=723640444#gid=723640444"
-# df = pd.read_csv(convert_google_sheet_url(url), header=1)
-json_string = df_to_json(convert_google_sheet_url(url))
-
-
-sys_prompt += f"---# 以下是這一季的服事表:{json_string}"
-
+st.set_page_config(page_title="教會AI助手", page_icon="✝️")
 
 # Show title and description.
 st.title("✝️  教會AI助手 ")
@@ -62,7 +19,6 @@ st.write("""
 - 可以問教會資訊(資訊截至 2025/01/12)
 - 可以產生小組成長題目
 - 可以詢問如何讀聖經
-- 可以詢問 2025 Q1 服事表(可能不準確)
 """)
 
 # Create an OpenAI client.
