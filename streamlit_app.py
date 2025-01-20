@@ -2,107 +2,207 @@ import streamlit as st
 from openai import OpenAI
 import pandas as pd
 import re
+import tiktoken
+
+
+def get_current_input_tokens(messages, base_system_tokens):
+    """Count tokens for the current input to API, avoiding duplicate system prompt counting."""
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    # Count system prompt only once
+    conversation_tokens = sum(
+        len(encoding.encode(message["content"])) + 4
+        for message in messages[1:]  # Skip system prompt
+    )
+    return base_system_tokens + conversation_tokens + 2  # +2 for assistant prefix
+
+
+def count_single_message_tokens(message):
+    """Count tokens for a single message."""
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    return len(encoding.encode(message)) + 4
 
 
 def convert_google_sheet_url(url):
-    # Regular expression to match and capture the necessary part of the URL
     pattern = r"https://docs\.google\.com/spreadsheets/d/([a-zA-Z0-9-_]+)(/edit#gid=(\d+)|/edit.*)?"
-
-    # Replace function to construct the new URL for CSV export
-    # If gid is present in the URL, it includes it in the export URL, otherwise, it's omitted
     replacement = (
         lambda m: f"https://docs.google.com/spreadsheets/d/{m.group(1)}/export?"
         + (f"gid={m.group(3)}&" if m.group(3) else "")
         + "format=csv"
     )
-
-    # Replace using regex
     new_url = re.sub(pattern, replacement, url)
-
     return new_url
 
 
 def df_to_json(csv_url):
-    # Read the CSV from the URL into a DataFrame
     df = pd.read_csv(csv_url, header=1)
-    df = df[df["季度"].isin(["Q1", "Q2", "Q3"])]
+    # df = df[df["季度"].isin(["Q1", "Q2", "Q3"])]
+    df = df[df["季度"].isin(["Q1"])]
+    df = df.iloc[:, 0:24]
 
-    # Convert the DataFrame to a JSON string
-    # json_output = df.to_json(orient="records", indent=4, force_ascii=False)
-    json_output = df.to_json(orient="records", force_ascii=False)  # compact
+    # Merge columns with "Vocal" in their name, ignoring NaN values
+    df["Vocal"] = df.filter(like="Vocal").apply(
+        lambda row: " ".join(row.dropna().astype(str)), axis=1
+    )
 
+    # Drop the original columns (optional)
+    df = df.drop(columns=df.filter(like="Vocal.").columns)
+
+    # df.to_csv("tmp.csv")
+
+    json_output = df.to_json(orient="records", force_ascii=False)
+    json_output = str(json_output).replace("null", "")
+    # print(json_output)
+    # input()
     return json_output
 
 
 st.set_page_config(page_title="教會AI助手", page_icon="✝️")
 
-
-# Read the system prompt from the external file
+# Read the base system prompt
 with open("sys_prompt.txt", "r", encoding="utf-8") as file:
-    sys_prompt = file.read()
-
+    base_sys_prompt = file.read()
 
 url = "https://docs.google.com/spreadsheets/d/1jBIFbMoAGu28sz2EXOkuGVQtgT8yY7l8GNJ3ZmctIYM/edit?gid=723640444#gid=723640444"
-# df = pd.read_csv(convert_google_sheet_url(url), header=1)
 json_string = df_to_json(convert_google_sheet_url(url))
 
+# Calculate base system prompt tokens once
+if "base_system_tokens" not in st.session_state:
+    st.session_state.base_system_tokens = count_single_message_tokens(base_sys_prompt)
+    st.session_state.service_schedule_tokens = count_single_message_tokens(json_string)
 
-sys_prompt += f"---# 以下是這一季的服事表:{json_string}"
-
-
-# Show title and description.
-st.title("✝️  教會AI助手 ")
+st.title("✝️ 教會AI助手 ")
 st.warning("測試階段", icon="⚠️")
 
 if st.button("慶祝！🥳"):
     st.balloons()
 
-
 st.write("""
-- 可以問教會資訊(資訊截至 2025/01/12)
-- 可以產生小組成長題目
-- 可以詢問如何讀聖經
-- 可以詢問 2025 Q1 服事表(可能不準確)
+- 可詢問：
+  - 教會公開資訊、週報消息(截至 2025/01/12)
+  - 小組成長題目
+  - 如何讀聖經
+  - 2025 Q1 崇拜服事表 (需提及「服事表」關鍵字)
 """)
 
-# Create an OpenAI client.
+# Add a checkbox to toggle the visibility of token metrics
+show_token_metrics = st.checkbox("顯示 Token 使用情況", value=False)
+
+# Create columns for metrics
+if show_token_metrics:
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("### Token Usage")
+        system_tokens_placeholder = st.empty()
+        conversation_tokens_placeholder = st.empty()
+        current_message_tokens_placeholder = st.empty()
+
+    with col2:
+        st.write("### API Call")
+        total_tokens_placeholder = st.empty()
+        response_tokens_placeholder = st.empty()
+
 client = OpenAI(
     api_key="sk-c155cb6974f1429e879d54b117e3befb", base_url="https://api.deepseek.com"
 )
 model_name = "deepseek-chat"
 
-# Create a session state variable to store the chat messages. This ensures that the
-# messages persist across reruns.
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": sys_prompt}
-    ]  # Add the system prompt here
+    st.session_state.messages = [{"role": "system", "content": base_sys_prompt}]
 
-# Display the existing chat messages via `st.chat_message`, excluding the system prompt
+# Display existing messages
 for message in st.session_state.messages:
-    if message["role"] != "system":  # Skip the system prompt
+    if message["role"] != "system":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# Create a chat input field to allow the user to enter a message. This will display
-# automatically at the bottom of the page.
+# Calculate initial token counts
+conversation_tokens = sum(
+    count_single_message_tokens(msg["content"]) for msg in st.session_state.messages[1:]
+)
+
+# Update displays
+if show_token_metrics:
+    system_tokens_placeholder.metric(
+        "System Prompt Tokens (Fixed)",
+        st.session_state.base_system_tokens,
+        help="This is counted only once and reused in each API call",
+    )
+    conversation_tokens_placeholder.metric(
+        "Conversation History Tokens",
+        conversation_tokens,
+        help="Accumulated tokens from previous messages",
+    )
+    current_message_tokens_placeholder.metric(
+        "Current Message Tokens", 0, help="Tokens in your new message"
+    )
+    total_tokens_placeholder.metric(
+        "Total API Call Tokens",
+        st.session_state.base_system_tokens + conversation_tokens,
+        help="Total tokens being sent to API",
+    )
+    response_tokens_placeholder.metric(
+        "Response Tokens", 0, help="Tokens in the assistant's response"
+    )
+
 if prompt := st.chat_input("平安！我能協助你什麼？"):
-    st.session_state.messages.append({"role": "user", "content": f"{prompt}"})
+    # Handle system prompt for service schedule
+    current_system_tokens = st.session_state.base_system_tokens
+    if "服事表" in prompt:
+        current_system_tokens += st.session_state.service_schedule_tokens
+        st.session_state.messages[0]["content"] = (
+            base_sys_prompt + f"\n---\n# 以下是這一季的服事表:{json_string}"
+        )
+    else:
+        st.session_state.messages[0]["content"] = base_sys_prompt
+
+    # Add user message
+    st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
-    # Start streaming response
+    # Calculate new token counts
+    new_message_tokens = count_single_message_tokens(prompt)
+    conversation_tokens = sum(
+        count_single_message_tokens(msg["content"])
+        for msg in st.session_state.messages[1:]
+    )
+    total_tokens = current_system_tokens + conversation_tokens
+
+    # Update displays
+    if show_token_metrics:
+        system_tokens_placeholder.metric(
+            "System Prompt Tokens (Fixed)",
+            current_system_tokens,
+            delta=None
+            if current_system_tokens == st.session_state.base_system_tokens
+            else f"+{st.session_state.service_schedule_tokens} (服事表)",
+        )
+        conversation_tokens_placeholder.metric(
+            "Conversation History Tokens", conversation_tokens - new_message_tokens
+        )
+        current_message_tokens_placeholder.metric(
+            "Current Message Tokens", new_message_tokens
+        )
+        total_tokens_placeholder.metric("Total API Call Tokens", total_tokens)
+
     response = client.chat.completions.create(
         model=model_name, messages=st.session_state.messages, stream=True
     )
+
     msg = ""
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        for chunk in response:  # Stream the response chunks
+        for chunk in response:
             chunk_content = (
                 chunk.choices[0].delta.content
                 if hasattr(chunk.choices[0].delta, "content")
                 else ""
             )
             msg += chunk_content
-            message_placeholder.markdown(msg)  # Update content incrementally
+            message_placeholder.markdown(msg)
+
+            # Update response tokens in real-time
+            if show_token_metrics:
+                response_tokens = count_single_message_tokens(msg)
+                response_tokens_placeholder.metric("Response Tokens", response_tokens)
+
     st.session_state.messages.append({"role": "assistant", "content": msg})
