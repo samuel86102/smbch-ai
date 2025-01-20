@@ -3,7 +3,7 @@ from openai import OpenAI
 import pandas as pd
 import re
 import tiktoken
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 
 def get_current_input_tokens(messages, base_system_tokens):
@@ -67,10 +67,16 @@ url = "https://docs.google.com/spreadsheets/d/1jBIFbMoAGu28sz2EXOkuGVQtgT8yY7l8G
 json_string = df_to_json(convert_google_sheet_url(url))
 
 base_sys_prompt += f"\n---\n# 以下是這一季的服事表:{json_string}"
-# Get the current date and time
-current_datetime = datetime.now()
-formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
-base_sys_prompt += f"\n---\n# 目前時間:{formatted_datetime}"
+
+
+# Define the UTC offset for Taiwan (UTC+8)
+taiwan_offset = timedelta(hours=8)
+# Get the current UTC time
+utc_now = datetime.utcnow()
+# Convert UTC time to Taiwan time by adding the UTC offset
+taiwan_now = utc_now.replace(tzinfo=timezone.utc).astimezone(timezone(taiwan_offset))
+
+base_sys_prompt += f"\n---\n# 目前時間:{taiwan_now}"
 
 # Calculate base system prompt tokens once
 if "base_system_tokens" not in st.session_state:
