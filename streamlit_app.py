@@ -3,6 +3,7 @@ from openai import OpenAI
 import pandas as pd
 import re
 import tiktoken
+from datetime import datetime
 
 
 def get_current_input_tokens(messages, base_system_tokens):
@@ -65,6 +66,12 @@ with open("sys_prompt.txt", "r", encoding="utf-8") as file:
 url = "https://docs.google.com/spreadsheets/d/1jBIFbMoAGu28sz2EXOkuGVQtgT8yY7l8GNJ3ZmctIYM/edit?gid=723640444#gid=723640444"
 json_string = df_to_json(convert_google_sheet_url(url))
 
+base_sys_prompt += f"\n---\n# 以下是這一季的服事表:{json_string}"
+# Get the current date and time
+current_datetime = datetime.now()
+formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+base_sys_prompt += f"\n---\n# 目前時間:{formatted_datetime}"
+
 # Calculate base system prompt tokens once
 if "base_system_tokens" not in st.session_state:
     st.session_state.base_system_tokens = count_single_message_tokens(base_sys_prompt)
@@ -81,7 +88,7 @@ st.write("""
   - 教會公開資訊、週報消息(截至 2025/01/12)
   - 小組成長題目
   - 如何讀聖經
-  - 2025 Q1 崇拜服事表 (需提及「服事表」關鍵字)
+  - 2025 Q1 崇拜服事表
 """)
 
 # Add a checkbox to toggle the visibility of token metrics
@@ -145,15 +152,7 @@ if show_token_metrics:
     )
 
 if prompt := st.chat_input("平安！我能協助你什麼？"):
-    # Handle system prompt for service schedule
     current_system_tokens = st.session_state.base_system_tokens
-    if "服事表" in prompt:
-        current_system_tokens += st.session_state.service_schedule_tokens
-        st.session_state.messages[0]["content"] = (
-            base_sys_prompt + f"\n---\n# 以下是這一季的服事表:{json_string}"
-        )
-    else:
-        st.session_state.messages[0]["content"] = base_sys_prompt
 
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
