@@ -1,9 +1,8 @@
 import streamlit as st
 from openai import OpenAI
-import pandas as pd
-import re
 import tiktoken
 from datetime import datetime, timezone, timedelta
+from utils.process import *
 
 
 def get_current_input_tokens(messages, base_system_tokens):
@@ -21,40 +20,6 @@ def count_single_message_tokens(message):
     """Count tokens for a single message."""
     encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
     return len(encoding.encode(message)) + 4
-
-
-def convert_google_sheet_url(url):
-    pattern = r"https://docs\.google\.com/spreadsheets/d/([a-zA-Z0-9-_]+)(/edit#gid=(\d+)|/edit.*)?"
-    replacement = (
-        lambda m: f"https://docs.google.com/spreadsheets/d/{m.group(1)}/export?"
-        + (f"gid={m.group(3)}&" if m.group(3) else "")
-        + "format=csv"
-    )
-    new_url = re.sub(pattern, replacement, url)
-    return new_url
-
-
-def df_to_json(csv_url):
-    df = pd.read_csv(csv_url, header=1)
-    # df = df[df["季度"].isin(["Q1", "Q2", "Q3"])]
-    df = df[df["季度"].isin(["Q1"])]
-    df = df.iloc[:, 0:24]
-
-    # Merge columns with "Vocal" in their name, ignoring NaN values
-    df["Vocal"] = df.filter(like="Vocal").apply(
-        lambda row: " ".join(row.dropna().astype(str)), axis=1
-    )
-
-    # Drop the original columns (optional)
-    df = df.drop(columns=df.filter(like="Vocal.").columns)
-
-    # df.to_csv("tmp.csv")
-
-    json_output = df.to_json(orient="records", force_ascii=False)
-    json_output = str(json_output).replace("null", "")
-    # print(json_output)
-    # input()
-    return json_output
 
 
 st.set_page_config(page_title="教會AI助手", page_icon="✝️")
