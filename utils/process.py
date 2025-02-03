@@ -1,6 +1,18 @@
 import pandas as pd
 import json
 import re
+from datetime import datetime, timezone, timedelta
+
+def current_time(offset=8):
+    # Define the UTC offset for Taiwan (UTC+8)
+    taiwan_offset = timedelta(hours=offset)
+    # Get the current UTC time
+    utc_now = datetime.now(timezone.utc)
+
+    # Convert UTC time to Taiwan time by adding the UTC offset
+    taiwan_now = utc_now.replace(tzinfo=timezone.utc).astimezone(timezone(taiwan_offset))
+    return taiwan_now
+
 
 
 # Google Sheet
