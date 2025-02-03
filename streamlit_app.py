@@ -45,9 +45,8 @@ st.write("""
 # base_url = "https://api.deepseek.com"
 # model_name = "deepseek-chat"
 
-api_key = "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"
-base_url = "https://openrouter.ai/api/v1"
-# model_name = "deepseek/deepseek-r1-distill-llama-70b"
+api_key = st.secrets["llm"]["api_key"]
+base_url = st.secrets["llm"]["base_url"]
 model_name = "deepseek/deepseek-chat"
 
 client = OpenAI(api_key=api_key, base_url=base_url)
