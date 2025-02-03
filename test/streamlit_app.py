@@ -23,17 +23,18 @@ with open("sys_prompt.txt", "r", encoding="utf-8") as file:
 
 url = "https://docs.google.com/spreadsheets/d/1jBIFbMoAGu28sz2EXOkuGVQtgT8yY7l8GNJ3ZmctIYM/edit?gid=723640444#gid=723640444"
 json_service, json_person = process_service_roster(url)
+
 service_info = json_service
 
-'''
+
 on = st.toggle("服事表查詢模式")
 if on:
     st.write("個人模式啟動")
     service_info = json_person
-'''
+
 
 selected_model = st.selectbox(
-    "語言模型",
+    "LLM Model",
     (
         "meta-llama/llama-3.3-70b-instruct",
         "deepseek/deepseek-chat",
@@ -47,8 +48,12 @@ selected_model = st.selectbox(
     ),
 )
 
+
 base_sys_prompt += f"\n---\n# 以下是這一季的服事表:{service_info}"
+
+
 taiwan_now = current_time(offset=8)
+
 base_sys_prompt += f"\n---\n# 目前時間:{taiwan_now}"
 
 
