@@ -35,8 +35,9 @@ if on:
 selected_model = st.selectbox(
     "語言模型",
     (
-        "meta-llama/llama-3.3-70b-instruct",
         "deepseek/deepseek-chat",
+        "meta-llama/llama-3.3-70b-instruct",
+        "openai/gpt-4o-mini",
         "meta-llama/llama-3.2-3b-instruct:free",
         "meta-llama/llama-3.2-1b-instruct:free",
         "deepseek/deepseek-r1:free",
