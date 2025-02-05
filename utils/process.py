@@ -289,7 +289,7 @@ def process_service_roster(raw_url):
     print("=== DataFrame Preprocessing ===")
     df_service = df_preprocess(df_raw, Q=1, level="service")
 
-    # df_service.to_csv("service.csv", index=False)
+    df_service.to_csv("service.csv", index=False)
 
     print("=== Convert DataFrame to JSON STring ===")
     json_service = df_to_json(df_service).replace("null", "")

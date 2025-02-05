@@ -1,6 +1,8 @@
 import streamlit as st
 from openai import OpenAI
-from utils.process import *
+
+# from utils.process import *
+from utils.process import process_service_roster, current_time
 
 
 st.set_page_config(page_title="教會AI助手", page_icon="✝️")
@@ -25,28 +27,47 @@ url = "https://docs.google.com/spreadsheets/d/1jBIFbMoAGu28sz2EXOkuGVQtgT8yY7l8G
 json_service, json_person = process_service_roster(url)
 service_info = json_service
 
-'''
+"""
 on = st.toggle("服事表查詢模式")
 if on:
     st.write("個人模式啟動")
     service_info = json_person
-'''
+"""
 
-selected_model = st.selectbox(
+# selected_model = st.selectbox(
+#     "語言模型",
+#     (
+#         "deepseek/deepseek-chat",
+#         "meta-llama/llama-3.3-70b-instruct",
+#         "openai/gpt-4o-mini",
+#         "meta-llama/llama-3.2-3b-instruct:free",
+#         "meta-llama/llama-3.2-1b-instruct:free",
+#         "deepseek/deepseek-r1:free",
+#         "deepseek/deepseek-r1-distill-llama-70b:free",
+#         "deepseek/deepseek-r1-distill-qwen-32b",
+#         "deepseek/deepseek-r1-distill-qwen-1.5b",
+#         "deepseek/deepseek-r1-distill-llama-70b",
+#     ),
+# )
+
+selected = st.selectbox(
     "語言模型",
     (
-        "deepseek/deepseek-chat",
-        "meta-llama/llama-3.3-70b-instruct",
-        "openai/gpt-4o-mini",
-        "meta-llama/llama-3.2-3b-instruct:free",
-        "meta-llama/llama-3.2-1b-instruct:free",
-        "deepseek/deepseek-r1:free",
-        "deepseek/deepseek-r1-distill-llama-70b:free",
-        "deepseek/deepseek-r1-distill-qwen-32b",
-        "deepseek/deepseek-r1-distill-qwen-1.5b",
-        "deepseek/deepseek-r1-distill-llama-70b",
+        {"model": "openai/gpt-4o-mini", "cost": "$0.15/M"},
+        {"model": "meta-llama/llama-3.2-3b-instruct:free", "cost": "$0.00/M"},
+        {"model": "meta-llama/llama-3.2-1b-instruct:free", "cost": "$0.00/M"},
+        {"model": "deepseek/deepseek-r1:free", "cost": "$0.00/M"},
+        {"model": "deepseek/deepseek-r1-distill-llama-70b:free", "cost": "$0.00/M"},
+        {"model": "meta-llama/llama-3.3-70b-instruct", "cost": "$0.12/M"},
+        {"model": "deepseek/deepseek-r1-distill-qwen-32b", "cost": "$0.12/M"},
+        {"model": "deepseek/deepseek-r1-distill-qwen-1.5b", "cost": "$0.18/M"},
+        {"model": "deepseek/deepseek-r1-distill-llama-70b", "cost": "$0.23/M"},
+        {"model": "deepseek/deepseek-chat", "cost": "$0.49/M"},
     ),
 )
+
+selected_model = selected["model"]
+
 
 base_sys_prompt += f"\n---\n# 以下是這一季的服事表:{service_info}"
 taiwan_now = current_time(offset=8)
