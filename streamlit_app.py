@@ -92,7 +92,7 @@ selected = st.selectbox(
 selected_model = selected.split(";")[0]
 
 
-# base_sys_prompt += f"\n---\n# 以下是這一季的服事表:{service_info}"
+base_sys_prompt += f"\n---\n# 以下是這一季的服事表:{service_info}"
 taiwan_now = current_time(offset=8)
 base_sys_prompt += f"\n---\n# 目前時間:{taiwan_now}"
 
@@ -146,23 +146,11 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
 
         with st.chat_message("assistant"):
             st.write(f"收到指令 '{prompt}'，以下為本季服事表:\n")
-            # st.dataframe(df_service)
+            st.dataframe(df_service, hide_index=True)
 
-            # Freeze top-left 3 columns and disable sorting for all columns
-            column_config = {
-                col: {"frozen": True}
-                for col in df_service.columns[:3]  # Freeze the first 3 columns
-            }
-
-            st.data_editor(
-                df_service,
-                hide_index=True,  # Hide index
-                column_config=column_config,  # Freeze first 3 columns
-                disabled=df_service.columns.tolist(),  # Disable sorting & editing for all columns
-            )
-            st.session_state.messages.append(
-                {"role": "assistant", "content": df_service}
-            )
+            # st.session_state.messages.append(
+            #     {"role": "assistant", "content": df_service}
+            # )
 
     elif "service:" in prompt:
         name = prompt.split(":")[1]
@@ -174,9 +162,7 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
             st.write(f"收到指令 '{prompt}'，以下為本季 {name} 的服事表:\n")
             df_person = get_person_df(json_person_raw, name)
             st.dataframe(df_person, hide_index=True)
-            # message_placeholder = st.empty()
-            # message_placeholder.markdown(msg)
-        st.session_state.messages.append({"role": "assistant", "content": df_person})
+        # st.session_state.messages.append({"role": "assistant", "content": df_person})
 
     else:
         # Add user message
