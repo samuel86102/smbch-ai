@@ -155,6 +155,10 @@ def df_to_json(df):
     return json.dumps(json_output, ensure_ascii=False)  # Keep Unicode characters
 
 
+def df_to_raw_json(df):
+    return df.to_json(orient="records", force_ascii=False)
+
+
 def dict_to_json(dict):
     schema = {
         "names": list(dict.keys()),
@@ -240,6 +244,8 @@ def df_melt(df):
 
     # Remove the ".*"
     melted_df["服事"] = melted_df["服事"].str.replace(r"\..*", "", regex=True)
+    melted_df["姓名"] = melted_df["姓名"].str.replace("久植神學生", "久植")
+    melted_df["姓名"] = melted_df["姓名"].str.replace("以柔神學生", "以柔")
 
     return melted_df
 
@@ -289,19 +295,30 @@ def process_service_roster(raw_url):
     print("=== DataFrame Preprocessing ===")
     df_service = df_preprocess(df_raw, Q=1, level="service")
 
-    df_service.to_csv("service.csv", index=False)
+    # df_service.to_csv("service.csv", index=False)
 
     print("=== Convert DataFrame to JSON STring ===")
     json_service = df_to_json(df_service).replace("null", "")
+    json_service_raw = df_to_raw_json(df_service)
     # token_estimate(json_service)
 
     # Person Level
     print("=== Person ===")
     df_person = df_preprocess(df_raw, Q=1, level="person")
-    # df_person.to_csv("person.csv", index=False)
+    df_person.to_csv("person.csv", index=False)
 
     person_dict = personalize(df_person, person="all")
     json_person = dict_to_json(person_dict)
+
+    json_person_raw = json_person
+    # json_person_raw = json.loads(json_person)
+    # token_estimate(json_service)
     # token_estimate(json_person)
 
-    return json_service, json_person
+    return json_service, json_service_raw, json_person, json_person_raw
+
+
+def person_df(df, name):
+    df_person = pd.DataFrame(df["data"][name])
+    print(df_person)
+    input()
