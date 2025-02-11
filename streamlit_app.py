@@ -83,6 +83,8 @@ selected = st.selectbox(
     (
         "openai/gpt-4o-mini;0.15",
         "deepseek/deepseek-chat;0.49",
+        "deepseek/deepseek-r1-distill-llama-70b:free;0",
+        "deepseek/deepseek-r1:free;0",
         "meta-llama/llama-3.1-70b-instruct:free;0",
         "meta-llama/llama-3.2-3b-instruct:free;0.00",
         "meta-llama/llama-3.3-70b-instruct;0.12",
@@ -140,6 +142,7 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
             message_placeholder.markdown(msg)
         st.session_state.messages.append({"role": "assistant", "content": msg})
 
+    ## Display Service with DataFrame table
     elif prompt == "service":
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
@@ -152,6 +155,7 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
             #     {"role": "assistant", "content": df_service}
             # )
 
+    ## Display Personal Service with DataFrame table
     elif "service:" in prompt:
         name = prompt.split(":")[1]
 
@@ -173,15 +177,49 @@ if prompt := st.chat_input("平安！我能協助你什麼？"):
             model=model_name, messages=st.session_state.messages, stream=True
         )
 
+        # msg = ""
+        # with st.chat_message("assistant"):
+        #     message_placeholder = st.empty()
+        #     for chunk in response:
+        #         chunk_content = (
+        #             chunk.choices[0].delta.content
+        #             if hasattr(chunk.choices[0].delta, "content")
+        #             else ""
+        #         )
+        #         msg += chunk_content
+        #         message_placeholder.markdown(msg)
+        # st.session_state.messages.append({"role": "assistant", "content": msg})
+
         msg = ""
+        reasoning = ""
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             for chunk in response:
+                # Extract content and reasoning from the chunk
                 chunk_content = (
                     chunk.choices[0].delta.content
                     if hasattr(chunk.choices[0].delta, "content")
                     else ""
                 )
+                chunk_reasoning = (
+                    chunk.choices[0].delta.reasoning
+                    if hasattr(chunk.choices[0].delta, "reasoning")
+                    else ""
+                )
                 msg += chunk_content
-                message_placeholder.markdown(msg)
-        st.session_state.messages.append({"role": "assistant", "content": msg})
+                reasoning += chunk_reasoning
+
+                # Format reasoning as italic and combine with content
+                display_text = ""
+                if reasoning:
+                    display_text += f"*{reasoning}*"
+                if msg:
+                    display_text += f"\n\n{msg}" if display_text else msg
+
+                message_placeholder.markdown(display_text)
+
+        # Combine reasoning and content for the session state
+        combined_content = f"{reasoning}\n\n{msg}" if reasoning else msg
+        st.session_state.messages.append(
+            {"role": "assistant", "content": combined_content}
+        )
